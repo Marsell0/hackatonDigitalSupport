@@ -86,6 +86,11 @@ function createFullChat(){
                         </div>
                         <div class="chat__body" id="messages">
                         </div>
+                        
+                        <div class="chat__faq">
+                            <a onclick="showHelp()" class="faq__item">Помогите</a>
+                            <a onclick="showHelp()" class="faq__item">Я в ахуе, что делать</a>
+                        </div>
                         <div class="chat__input">
                             <div class="input__area">
                                 <input id="txtInput" type="text" placeholder="Печатать здесь" autofocus">
@@ -182,3 +187,7 @@ function ctrlButton() {
   
 text1.addEventListener('input', ctrlButton, false);
 ctrlButton.call(text1);
+
+function showHelp(){
+    
+}
