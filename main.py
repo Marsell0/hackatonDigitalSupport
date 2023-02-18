@@ -34,18 +34,21 @@ r = redis.StrictRedis(
     decode_responses=True
 )
 
+
 class ConnectionManager:
     def __init__(self):
-        self.connections: list[list[WebSocket | int]] = []
+        self.connections: list[list[WebSocket | str]] = []
 
-    async def connect(self, websocket: WebSocket, id: int):
+    async def connect(self, websocket: WebSocket, id: str):
         await websocket.accept()
         self.connections.append([websocket, id])
 
-    async def broadcast(self, data: str, id: int):
+    async def broadcast(self, data: str, id: str):
         for connection in self.connections:
             if connection[1] == id:
-                await connection[0].send_text(reply(data))
+                answer = reply(data)
+                r.set(f'messages:{id}:bot:{len(r.keys(f"messages:{id}:*:*"))}', answer)
+                await connection[0].send_text(answer)
 
 
 manager = ConnectionManager()
@@ -53,24 +56,38 @@ manager = ConnectionManager()
 
 @app.get('/get_id')
 def get_id():
-    r.rpush('users', ''.join(random.choices(string.ascii_letters + string.digits, k=32)))
+    id = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+    r.rpush('users', id)
+    return id
 
 
 @app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
+    r.rpush('users', client_id)
     while True:
         data = await websocket.receive_text()
+        r.set(f'messages:{client_id}:user:{len(r.keys(f"messages:{client_id}:*:*"))}', data)
         await manager.broadcast(data, client_id)
 
 
-@app.get('/send/{message}/{id}')
-async def send(message: str, id: int):
-    await manager.broadcast(message, id)
+@app.get('/get_messages/{id}')
+def get_messages(id: str):
+    keys = r.keys(f'messages:{id}:*:*')
+    messages = {}
+
+    for key in keys:
+        messages_, client_id, from_, id_ = key.split(':')
+        messages[str(keys.index(key))] = {
+            'from': from_,
+            'text': r.get(key)
+        }
+
+    return messages
 
 
 @app.post('/send_voice/{id}')
-async def voice2text(voice: UploadFile, id: int):
+async def voice2text(voice: UploadFile, id: str):
     with open(f'{voice.filename}.wav', 'wb') as f:
         f.write(voice.file.read())
 
@@ -101,5 +118,6 @@ async def voice2text(voice: UploadFile, id: int):
     res = json.loads(rec.FinalResult())
     result += f" {res['text']}"
 
+    r.set(f'messages:{id}:user:{len(r.keys(f"messages:{id}:*:*"))}', result)
     await manager.broadcast(result, id)
     return 200

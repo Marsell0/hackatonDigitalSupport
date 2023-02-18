@@ -14,8 +14,20 @@
         <ul id='messages'>
         </ul>
         <script>
-            var clientID = Date.now();
-            var ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientID}`);
+            var clientID;
+
+            //let response = await fetch('http://127.0.0.1:8000/get_id');
+
+            //fetch('http://127.0.0.1:8000/get_id')
+            //    .then(response => response.text())
+
+            var xhttp = new XMLHttpRequest()
+            xhttp.open("GET", "http://127.0.0.1:8000/get_id", false);
+            xhttp.send();
+            clientID = (xhttp.response).slice(1, -1);
+
+            ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientID}`);
+
             console.log(clientID)
 
             function processMessage(event) {
@@ -47,56 +59,59 @@
                 form.style.display = "block";
             }
 
+
             const URL = 'http://127.0.0.1:8000/send_voice';
-let div = document.createElement('div');
-div.id = 'messages';
-let start = document.createElement('button');
-start.id = 'start';
-start.innerHTML = 'Start';
-let stop = document.createElement('button');
-stop.id = 'stop';
-stop.innerHTML = 'Stop';
-document.body.appendChild(div);
-document.body.appendChild(start);
-document.body.appendChild(stop);
-navigator.mediaDevices.getUserMedia({ audio: true})
-    .then(stream => {
-        const mediaRecorder = new MediaRecorder(stream);
+            let div = document.createElement('div');
+            div.id = 'messages';
+            let start = document.createElement('button');
+            start.id = 'start';
+            start.innerHTML = 'Start';
+            let stop = document.createElement('button');
+            stop.id = 'stop';
+            stop.innerHTML = 'Stop';
+            document.body.appendChild(div);
+            document.body.appendChild(start);
+            document.body.appendChild(stop);
+            navigator.mediaDevices.getUserMedia({ audio: true})
+                .then(stream => {
+                    const mediaRecorder = new MediaRecorder(stream);
 
-        document.querySelector('#start').addEventListener('click', function(){
-            mediaRecorder.start();
-        });
-        let audioChunks = [];
-        mediaRecorder.addEventListener("dataavailable",function(event) {
-            audioChunks.push(event.data);
-        });
+                    document.querySelector('#start').addEventListener('click', function(){
+                        mediaRecorder.start();
+                    });
+                    let audioChunks = [];
+                    mediaRecorder.addEventListener("dataavailable",function(event) {
+                        audioChunks.push(event.data);
+                    });
 
-        document.querySelector('#stop').addEventListener('click', function(){
-            mediaRecorder.stop();
-        });
+                    document.querySelector('#stop').addEventListener('click', function(){
+                        mediaRecorder.stop();
+                    });
 
-        mediaRecorder.addEventListener("stop", function() {
-            const audioBlob = new Blob(audioChunks, {
-                type: 'audio/wav'
-            });
+                    mediaRecorder.addEventListener("stop", function() {
+                        const audioBlob = new Blob(audioChunks, {
+                            type: 'audio/wav'
+                        });
 
-            let fd = new FormData();
-            fd.append('voice', audioBlob);
-            sendVoice(fd);
-            audioChunks = [];
-        });
-    });
+                        let fd = new FormData();
+                        fd.append('voice', audioBlob);
+                        sendVoice(fd);
+                        audioChunks = [];
+                    });
+                });
 
-async function sendVoice(form) {
-    let promise = await fetch(URL+"/"+clientID, {
-        method: 'POST',
-        body: form});
-    if (promise.ok) {
-        let response =  await promise.json();
-        console.log(response);
-    }
-}
-
+            async function sendVoice(form) {
+                let promise = await fetch(URL+"/"+clientID, {
+                    method: 'POST',
+                    body: form});
+                if (promise.ok) {
+                    let response =  await promise.json();
+                    console.log(response);
+                }
+            }
+            window.addEventListener("beforeunload", function(e){
+               ws.close();
+            }, false);
         </script>
     </body>
 </html>
