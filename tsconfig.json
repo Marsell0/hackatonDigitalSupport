@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "removeComments": true,
+        "outFile": "popups.js",
+    },
+    "files":[
+        "src/popups.ts"
+    ]
+}
