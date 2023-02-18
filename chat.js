@@ -1,9 +1,7 @@
 createFullChat();
 showChat();
 closeFullChat();
-// let isRecord = false;
-// showForm();
-
+showForm();
 
 
 function showChat(){
@@ -20,29 +18,31 @@ function showChat(){
 function createFullChat(){
     let chat = document.createElement('div');
     chat.id = 'myForm';
-    // chat.innerHTML = `\
-    //                     <form action="" class="form-container">\
-    //                         <h1>Чат</h1>\
-    //                         <button type="button" class="btn cancel" onclick="closeFullChat()">X</button>\
-    //                         <ul class="message-box" id="message-list">
-    //                         </ul>
-    //                         <input id="textField" placeholder="Введите сообщение.." name="msg" required></input>\
-    
-    //                         <button id="record_stop_send" type="submit" class="btn">Отправить</button>\
-    //                         <button onClick="showForm(event)" id="connect">Connect</button>
-                            
-    //                     </form>`;
-    chat.innerHTML = ` \
-                        <div class="form-container">
-                        <h1>WebSocket Chat</h1>
-                            <button onClick="showForm(event)" id="connect">Connect</button>
-                            <ul class="message-box" id='messages'>
+    chat.innerHTML = `\
+                        <div class="chat__header">\
+                            <p class="header__title">Ассистент</p>\
+                            <button class="header__close" onclick="closeFullChat()">X</button>
+                        </div>
+                        <div class="chat__body">
+                            <ul class="body__items" id="messages">
                             </ul>
-                            <form action="" onsubmit="sendMessage(event)" id="form" style="display: none">
-                                <input type="text" id="messageText" autocomplete="off"/>
-                                <button>Send</button>
-                            </form>
+                        </div>
+                        <div class="chat__input">
+                            <div class="input__area">
+                                <input id="txtInput" type="text placeholder="Печатать здесь" autofocus">
+                            </div>
+                            <div class="input__send">
+                                <button id="sendBtn" onclick="sendMessage()"><img width="30px" height="30px" src="src/send.svg"></button>
+                            </div>
                         </div>`;
+                        
+    // chat.innerHTML = `
+    //                     <div id="chat" class="chat">
+    //                     </div>
+    //                     <div class="flex">
+    //                         <input id="message" type="text" class="px-3 w-full border-t border-gray-300 outline-none text-gray-700" placeholder="Type your message..." />
+    //                         <button class="px-8 py-3 bg-green-500 text-white hover:bg-green-600 transition-colors" onclick="sendMessage()">Send</button>
+    //                     </div>`;
     // chat.innerHTML = 
     //   <div class="chat-header">
     //     <div class="title">Chat</div>
@@ -57,7 +57,7 @@ function createFullChat(){
     //     </div>
     //   </div>              
     // `
-    chat.classList.add('chat-popup');
+    chat.classList.add('container__chat');
     
     let my_div = document.getElementsByClassName("page__body")[0];
     my_div.parentNode.insertBefore(chat, my_div);
@@ -90,6 +90,7 @@ function sendMessage(event) {
     var input = document.getElementById("messageText")
     var message = document.createElement('li')
     var content = document.createTextNode(input.value)
+    message.classList.add('items__item')
     message.appendChild(content);
     message.appendChild(message);
     ws.send(input.value);
@@ -101,6 +102,7 @@ function sendMessage(event) {
 function showForm(event) {
     var button = document.getElementById("connect");
     var form = document.getElementById("form");
+    console.log(button)
     
     button.style.display = "none";
     form.style.display = "block";
@@ -147,11 +149,11 @@ navigator.mediaDevices.getUserMedia({ audio: true})
     });
 
 async function sendVoice(form) {
-let promise = await fetch(URL+"/"+clientID, {
-method: 'POST',
-body: form});
-if (promise.ok) {
-let response =  await promise.json();
-console.log(response);
-}
+    let promise = await fetch(URL+"/"+clientID, {
+    method: 'POST',
+    body: form});
+    if (promise.ok) {
+        let response =  await promise.json();
+        console.log(response);
+    }
 }
