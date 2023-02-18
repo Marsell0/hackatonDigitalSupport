@@ -1,0 +1,13 @@
+websockets
+fastapi
+uvicorn
+pandas
+scikit-learn
+scipy
+matplotlib
+numpy
+python-multipart
+vosk
+wave
+librosa
+redis
