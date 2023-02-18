@@ -2,7 +2,7 @@ createFullChat();
 showChat();
 closeFullChat();
 
-const URL = 'https://eb0b-176-28-64-201.eu.ngrok.io/send_voice';
+const URL = 'http://127.0.0.1:8000/send_voice';
 let div = document.createElement('div');
 div.id = 'msg';
 let start = document.createElement('button');
@@ -72,7 +72,7 @@ function createFullChat(){
                                 <input id="txtInput" type="text placeholder="Печатать здесь" autofocus">
                             </div>
                             <div id="place_for_btns" class="input__send">
-                                <button id="sendBtn" onclick="sendMessage()"><img width="30px" height="30px" src="src/send.svg"></button>
+                                <button id="sendBtn" onclick="sendMessage(event)"><img width="30px" height="30px" src="src/send.svg"></button>
                             </div>
                         </div>`;
     chat.classList.add('container__chat');
@@ -91,7 +91,7 @@ function closeFullChat(){
 }
 // -------------------------------------------------RECORDER----------------------------------------
 var clientID = Date.now();
-var ws = new WebSocket(`ws://eb0b-176-28-64-201.eu.ngrok.io/ws/${clientID}`);
+var ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientID}`);
 console.log(clientID)
 
 function processMessage(event) {
@@ -110,7 +110,7 @@ function sendMessage(event) {
     var content = document.createTextNode(input.value)
     message.classList.add('items__item')
     message.appendChild(content);
-    message.appendChild(message);
+    // message.appendChild(message);
     ws.send(input.value);
 
     input.value = ''
