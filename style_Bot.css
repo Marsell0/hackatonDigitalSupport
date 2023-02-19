@@ -10,7 +10,22 @@
 }
 /*-----------------------------------------CHAT------------------------------------------*/
 .open-button {
-  background-color: #8C64D8;
+  background-color:#8C64D8;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  font-size: 50px;
+  padding: 0.2em;
+  width: 1.4em;
+  height: 1.4em;
+  border: 0px;
+  border-radius: 100%;
+  margin: 8px;
+  position: fixed;
+  bottom: 23px;
+  right: 10px;
+  z-index: 8;
+  /* background-color: #8C64D8;
   color: white;
   padding: 16px 20px;
   border: none;
@@ -22,7 +37,7 @@
   width: 45px;
   border-radius: 25px;
   z-index: 8;
-  box-shadow: 0px 0px 15px 0px black;
+  box-shadow: 0px 0px 15px 0px black; */
 }
 .container__chat{
   height: 550px;
@@ -50,6 +65,16 @@
 .header__close{
   background-color: #8C64D8;
   color: white;
+  justify-content: center;
+  align-items: center;
+  font-size: 50px;
+  padding: 0.2em;
+  width: 30px;
+  height: 30px;
+  border: 0px;
+  border-radius: 100%;
+  margin: 8px;
+  font-size: 10px;
 }
 .chat__body{
   height: 300px;
@@ -81,14 +106,14 @@
   align-items: center;
 }
 .input__area{
-  flex: 9;
+  flex: 8;
 }
 .input__send{
-  flex:
+  flex: 2;
 }
 #txtInput{
   border: 1px solid grey;
-  border-radius: 45px;
+  border-radius: 10px;
   height: 50px;
   width: 90%;
   margin: 5px;
@@ -122,8 +147,8 @@
   align-items: center;
   font-size: 50px;
   padding: 0.2em;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1em;
+  height: 1em;
   border: 0px;
   border-radius: 100%;
   margin: 8px;
@@ -147,7 +172,7 @@
   padding: 8px;
   background: #ccc;
   margin: 5px;
-  width: max-content;
+  width: 70%;
   border-radius: 10px 3px 10px 10px;
   background-color: #8C64D8;
   color: whitesmoke;
@@ -163,9 +188,34 @@
   height: 40px;
 }
 .items__answers{
-  width: 70%;
   background-color: #f5f5f5 ;
   color: black;
   align-self: flex-start;
-  border-radius: 10px 10px 3px 10px;
+  border-radius: 2px 10px 10px 10px;
+}
+.animate-chat{
+  animation: grow-circle .3s forwards ease-out;
+}
+.animate-chat__deact{
+  animation: grow-circle__deact .3s forwards ease-out;
+}
+
+
+@keyframes grow-circle {
+
+  from{
+      clip-path: circle(0% at 100% 100%);
+  }
+  to{
+      clip-path: circle(100% at 50% 50%);
+  }
+}
+@keyframes grow-circle__deact {
+
+  from{
+    clip-path: circle(100% at 50% 50%);
+  }
+  to{
+      clip-path: circle(0% at 100% 100%);
+  }
 }

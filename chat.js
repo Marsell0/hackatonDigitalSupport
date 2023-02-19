@@ -66,11 +66,15 @@ document.getElementById('stop').addEventListener('click', ()=>{
 
 function showChat(){
     let chat = document.createElement('button');
+    let img = document.createElement('img')
+    img.setAttribute('src', 'src/bot.svg')
+    // img.setAttribute('width', '30px')
+    // img.setAttribute('height', '30px')
     chat.classList.add('open-button');
     // chat.textContent = 'Chat';
     chat.addEventListener('click', () => showFullChat());
     // chat.addEventListener('click', () => showForm());
-
+    chat.appendChild(img)
     let my_div = document.getElementsByClassName("page__body")[0];
     my_div.parentNode.insertBefore(chat, my_div);
     
@@ -109,9 +113,10 @@ function createFullChat(){
     
     let my_div = document.getElementsByClassName("page__body")[0];
     my_div.parentNode.insertBefore(chat, my_div);
-    console.log('full');
 }
 function showFullChat(){
+    document.getElementById("myForm").classList.remove('animate-chat__deact')
+    document.getElementById("myForm").classList.add('animate-chat')
     document.getElementById("myForm").style.display = "block";
 }
 
@@ -119,7 +124,9 @@ function showFullChat(){
     
 
 function closeFullChat(){
-    document.getElementById("myForm").style.display = "none";
+    document.getElementById("myForm").classList.remove('animate-chat')
+    document.getElementById("myForm").classList.add('animate-chat__deact')
+    // document.getElementById("myForm").style.display = "none";
 }
 // -------------------------------------------------RECORDER----------------------------------------
 var clientID = Date.now();
