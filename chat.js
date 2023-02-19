@@ -3,9 +3,16 @@ showChat();
 closeFullChat();
 
 document.getElementById('txtInput').addEventListener('input', ()=>{
-    document.getElementById('start').style.display = 'none'
-    document.getElementById('sendBtn').style.display = 'inline-flex'
+    if(document.getElementById('txtInput').value != ''){
+        document.getElementById('start').style.display = 'none'
+        document.getElementById('sendBtn').style.display = 'inline-flex'    
+    }else{
+        document.getElementById('start').style.display = 'inline-flex'
+        document.getElementById('sendBtn').style.display = 'none'    
+    }
+    
 })
+
 document.getElementById('txtInput').addEventListener("keyup", (event) => {
     if (event.keyCode === 13) {
       sendMessage();
@@ -131,7 +138,7 @@ function closeFullChat(){
     document.getElementById("myForm").classList.add('animate-chat__deact')
     // document.getElementById("myForm").style.display = "none";
 }
-// -------------------------------------------------RECORDER----------------------------------------
+// -------------------------------------------------CHAT----------------------------------------
 var clientID = Date.now();
 var ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientID}`);
 console.log(clientID)
@@ -168,15 +175,6 @@ function sendMessage(event) {
     input.value = ''
     event.preventDefault()
 }
-
-// function showForm(event) {
-    
-//     var form = document.getElementById("form");
-    
-    
-    
-//     form.style.display = "block";
-// }
 
 async function sendVoice(form) {
     var messages = document.getElementById('messages')
