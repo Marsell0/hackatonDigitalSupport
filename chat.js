@@ -139,9 +139,57 @@ function closeFullChat(){
     // document.getElementById("myForm").style.display = "none";
 }
 // -------------------------------------------------CHAT----------------------------------------
-var clientID = Date.now();
+var clientID;
+
+// if (localStorage.getItem('clientID')) {
+//     clientID = localStorage.getItem('clientID');
+//     console.log(clientID)
+
+//     var xhttp = new XMLHttpRequest()
+//             xhttp.open("GET", "http://127.0.0.1:8000/get_messages/"+clientID, false);
+//             xhttp.send();
+//             console.log(xhttp.response)
+//             var jsonResponse = JSON.parse(xhttp.responseText);
+
+            
+
+//             for (let i = 0; i <  Object.keys(jsonResponse).length; i++) {
+//                 let msh = jsonResponse[i];
+//                 if (msh["from"] == 'user') {
+//                     let child = document.createElement('div');
+//                     child.setAttribute('class', 'items__questions');
+//                     child.innerHTML = msh['text'];
+//                     document.getElementById('messages').appendChild(
+//                         child
+//                     )
+//                 }
+//                 else if (msh["from"] == 'bot') {
+//                     let child = document.createElement('div');
+//                     child.setAttribute('class', 'items__answers');
+//                     child.innerHTML = msh['text'];
+//                     document.getElementById('messages').appendChild(
+//                         child
+//                     )
+//                 }
+//             }
+//         }
+// else {
+    var xhttp = new XMLHttpRequest()
+            xhttp.open("GET", "http://127.0.0.1:8000/get_id", false);
+            xhttp.send();
+            clientID = (xhttp.response).slice(1, -1);
+
+
+//     localStorage.setItem('clientID', clientID);
+// }
+
+
+
 var ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientID}`);
-console.log(clientID)
+
+window.addEventListener("beforeunload", function(e){
+    ws.close();
+ }, false);
 
 function processMessage(event) {
     var messages = document.getElementById('messages')
