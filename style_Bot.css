@@ -1,4 +1,6 @@
-* {box-sizing: border-box;}
+* {
+  box-sizing: border-box;
+}
 /*---------------------------------------POPUP------------------------------------------*/
 .popup{
     display: none;
@@ -47,8 +49,9 @@
   bottom: 23px;
   right: 10px;
   z-index: 9;
-  box-shadow: 0px 0px 15px 0px black;
+  box-shadow: 0px 0px 25px -15px rgba(0, 0, 0, 0.5);
   border-radius: 5%;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 .chat__header{
   height: 60px;
@@ -56,7 +59,7 @@
   align-items: center;
   padding: 0px 30px;
   justify-content: space-between;
-  border-bottom: 1px solid gray;
+  user-select: none;
 }
 .header__title{
   color: #DAEF14;
@@ -75,6 +78,7 @@
   border-radius: 100%;
   margin: 8px;
   font-size: 10px;
+  cursor: pointer;
 }
 .chat__body{
   height: 300px;
@@ -87,18 +91,25 @@
 }
 .chat__body::-webkit-scrollbar { width: 0; }
 .chat__faq{
+  padding: 5px;
   display: flex;
   flex-wrap: wrap;
-  border-top: 1px solid gray;
-
+  user-select: none;
 }
-.faq__item{
+.faq__item {
   padding: 8px;
   margin: 5px;
   background-color: white;
   color: #8C64D8;
-  border-radius: 35px;
-  box-shadow: 0px 0px 5px 0px #8C64D8;
+  border-radius: 15px;
+  border: 2px solid #8C64D8;
+  transition: .2s;
+}
+
+.faq__item:hover {
+  color: white;
+  background-color: #8C64D8;
+  cursor: pointer;
 }
 
 .chat__input{
@@ -112,12 +123,13 @@
   flex: 2;
 }
 #txtInput{
-  border: 1px solid grey;
-  border-radius: 10px;
+  border: 2px solid rgb(223, 223, 223);
+  border-radius: 15px;
   height: 50px;
   width: 90%;
-  margin: 5px;
-  padding: 5px;
+  margin: 10px;
+  padding: 10px;
+  outline: none;
 }
 #sendBtn{
   background-color:#DAEF14;
@@ -127,11 +139,12 @@
   align-items: center;
   font-size: 50px;
   padding: 0.2em;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1em;
+  height: 1em;
   border: 0px;
   border-radius: 100%;
   margin: 8px;
+  cursor: pointer;
 }
 #start:hover,
 #sendBtn:hover,
@@ -152,6 +165,7 @@
   border: 0px;
   border-radius: 100%;
   margin: 8px;
+  cursor: pointer;
 }
 #stop{
   background-color:#DAEF14;
@@ -161,10 +175,12 @@
   align-items: center;
   font-size: 50px;
   padding: 0.2em;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1em;
+  height: 1em;
   border: 0px;
   border-radius: 100%;
+  margin: 8px;
+  cursor: pointer;
 }
 
 .items__answers,
@@ -198,6 +214,14 @@
 }
 .animate-chat__deact{
   animation: grow-circle__deact .3s forwards ease-out;
+}
+
+.open-button img {
+  padding-bottom: 7px;
+}
+
+.open-button {
+  cursor: pointer;
 }
 
 
