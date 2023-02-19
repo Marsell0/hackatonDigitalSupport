@@ -1,0 +1,1 @@
+All you need for correctly work - connect script and styles in your html file

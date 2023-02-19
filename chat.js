@@ -12,7 +12,7 @@ document.getElementById('txtInput').addEventListener("keyup", (event) => {
     }
   });
 
-const chatBody = document.querySelector(".chat-body");
+const chatBody = document.querySelector(".chat__body");
 const URL = 'http://127.0.0.1:8000/send_voice';
 let img = document.createElement('img')
 img.setAttribute('src', 'src/mic.svg')
@@ -85,11 +85,17 @@ function createFullChat(){
                             <button class="header__close" onclick="closeFullChat()">X</button>
                         </div>
                         <div class="chat__body" id="messages">
+                            <div class="items__answers">
+                                User, я чат-бот конкурса Росмолодёжь.Гранты. Приятно познакомиться!
+                                Я могу помочь вам подать заявку, подготовить проект к очной защите, сделать отчёт по реализации проекта или ответить на другой ваш вопрос о грантовом конкурсе.
+                            </div>
                         </div>
                         
                         <div class="chat__faq">
-                            <a onclick="showHelp()" class="faq__item">Помогите</a>
-                            <a onclick="showHelp()" class="faq__item">Я в ахуе, что делать</a>
+                            <a onclick="showHelp('Гранты')" class="faq__item">Гранты</a>
+                            <a onclick="showHelp('Как подать заявку')" class="faq__item">Как подать заявку</a>
+                            <a onclick="showHelp('Куда нажимать')" class="faq__item">Куда нажимать</a>
+                            <a onclick="showHelp('Как подать заявку')" class="faq__item">Как подать заявку</a>
                         </div>
                         <div class="chat__input">
                             <div class="input__area">
@@ -127,6 +133,9 @@ function processMessage(event) {
     message.classList.add('items__answers')
     message.appendChild(content);
     messages.appendChild(message);
+    setTimeout(() => {
+        setScrollPosition();
+      }, 600);
 }
 
 ws.onmessage = processMessage;
@@ -139,7 +148,6 @@ function sendMessage(event) {
     message.classList.add('items__questions')
     message.appendChild(content);
     messages.appendChild(message);
-    console.log("text: " + input.value)
     document.getElementById('start').style.display = 'inline-flex'
     document.getElementById('sendBtn').style.display = 'none'
     ws.send(input.value);
@@ -176,18 +184,27 @@ async function sendVoice(form) {
         console.log(response);
     }
 }
-const setScrollPosition = () => {
+function setScrollPosition(){
     if (chatBody.scrollHeight > 0) {
       chatBody.scrollTop = chatBody.scrollHeight;
     }
   };
-function ctrlButton() {
-    btn.disabled = this.value.trim().length === 0;
-}
-  
-text1.addEventListener('input', ctrlButton, false);
-ctrlButton.call(text1);
 
-function showHelp(){
-    
+function showHelp(text){
+    var messages = document.getElementById('messages')
+    var message = document.createElement('div')
+    var content = document.createTextNode(text)
+    message.classList.add('items__questions')
+    message.appendChild(content);
+    console.log(content)
+    messages.appendChild(message);
+    document.getElementById('start').style.display = 'inline-flex'
+    document.getElementById('sendBtn').style.display = 'none'
+    ws.send(text);
+    setTimeout(() => {
+        setScrollPosition();
+      }, 600);
+
+    input.value = ''
+    event.preventDefault()
 }
