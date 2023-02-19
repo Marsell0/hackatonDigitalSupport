@@ -75,7 +75,7 @@ function showChat(){
     chat.addEventListener('click', () => showFullChat());
     // chat.addEventListener('click', () => showForm());
     chat.appendChild(img)
-    let my_div = document.getElementsByClassName("page__body")[0];
+    let my_div = document.getElementsByTagName("body")[0];
     my_div.parentNode.insertBefore(chat, my_div);
     
 
@@ -111,7 +111,7 @@ function createFullChat(){
                         </div>`;
     chat.classList.add('container__chat');
     
-    let my_div = document.getElementsByClassName("page__body")[0];
+    let my_div = document.getElementsByTagName("body")[0];
     my_div.parentNode.insertBefore(chat, my_div);
 }
 function showFullChat(){
@@ -190,6 +190,7 @@ async function sendVoice(form) {
         let response =  await promise.json();
         console.log(response);
     }
+
 }
 function setScrollPosition(){
     if (chatBody.scrollHeight > 0) {
@@ -212,6 +213,6 @@ function showHelp(text){
         setScrollPosition();
       }, 600);
 
-    input.value = ''
+    // input.value = ''
     event.preventDefault()
 }
