@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<!-- saved from url=(0037)https://fadm.gov.ru/directions/grant/ -->
+<html lang="ru" class="page bx-core bx-win bx-no-touch bx-no-retina bx-chrome"><script async="" src="./Гранты_files/tag.js.Без названия"></script><script type="text/javascript" async="" src="./Гранты_files/ba.js.Без названия"></script><script>
+    window[Symbol.for('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')] = new (class PostClient {
+    constructor(name, destination) {
+        this.name = name;
+        this.destination = destination;
+        this.serverListeners = {};
+        this.bgRequestsListeners = {};
+        this.bgEventsListeners = {};
+        window.addEventListener('message', (message) => {
+            const data = message.data;
+            const isNotForMe = !(data.destination && data.destination === this.name);
+            const hasNotEventProp = !data.event;
+            if (isNotForMe || hasNotEventProp) {
+                return;
+            }
+            if (data.event === 'MARIO_POST_SERVER__BG_RESPONSE') {
+                const response = data.args;
+                if (this.hasBgRequestListener(response.requestId)) {
+                    try {
+                        this.bgRequestsListeners[response.requestId](response.response);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                    delete this.bgRequestsListeners[response.requestId];
+                }
+            }
+            else if (data.event === 'MARIO_POST_SERVER__BG_EVENT') {
+                const response = data.args;
+                if (this.hasBgEventListener(response.event)) {
+                    try {
+                        this.bgEventsListeners[data.id](response.payload);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
+            else if (this.hasServerListener(data.event)) {
+                try {
+                    this.serverListeners[data.event](data.args);
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
+            else {
+                console.log(`event not handled: ${data.event}`);
+            }
+        });
+    }
+    emitToServer(event, args) {
+        const id = this.generateUIID();
+        const message = {
+            args,
+            destination: this.destination,
+            event,
+            id,
+        };
+        window.postMessage(message, location.origin);
+        return id;
+    }
+    emitToBg(bgEventName, args) {
+        const requestId = this.generateUIID();
+        const request = { bgEventName, requestId, args };
+        this.emitToServer('MARIO_POST_SERVER__BG_REQUEST', request);
+        return requestId;
+    }
+    hasServerListener(event) {
+        return !!this.serverListeners[event];
+    }
+    hasBgRequestListener(requestId) {
+        return !!this.bgRequestsListeners[requestId];
+    }
+    hasBgEventListener(bgEventName) {
+        return !!this.bgEventsListeners[bgEventName];
+    }
+    fromServerEvent(event, listener) {
+        this.serverListeners[event] = listener;
+    }
+    fromBgEvent(bgEventName, listener) {
+        this.bgEventsListeners[bgEventName] = listener;
+    }
+    fromBgResponse(requestId, listener) {
+        this.bgRequestsListeners[requestId] = listener;
+    }
+    generateUIID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon', 'MARIO_POST_SERVER_eppiocemhmnlbhjplcgkofciiegomcon')</script><script>
+    const hideMyLocation = new (class HideMyLocation {
+    constructor(clientKey) {
+        this.clientKey = clientKey;
+        this.watchIDs = {};
+        this.client = window[Symbol.for(clientKey)];
+        const getCurrentPosition = navigator.geolocation.getCurrentPosition;
+        const watchPosition = navigator.geolocation.watchPosition;
+        const clearWatch = navigator.geolocation.clearWatch;
+        const self = this;
+        navigator.geolocation.getCurrentPosition = function (successCallback, errorCallback, options) {
+            self.handle(getCurrentPosition, 'GET', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.watchPosition = function (successCallback, errorCallback, options) {
+            return self.handle(watchPosition, 'WATCH', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.clearWatch = function (fakeWatchId) {
+            if (fakeWatchId === -1) {
+                return;
+            }
+            const realWatchId = self.watchIDs[fakeWatchId];
+            delete self.watchIDs[fakeWatchId];
+            return clearWatch.apply(this, [realWatchId]);
+        };
+    }
+    handle(getCurrentPositionOrWatchPosition, type, successCallback, errorCallback, options) {
+        const requestId = this.client.emitToBg('HIDE_MY_LOCATION__GET_LOCATION');
+        let fakeWatchId = this.getRandomInt(0, 100000);
+        this.client.fromBgResponse(requestId, (response) => {
+            if (response.enabled) {
+                if (response.status === 'SUCCESS') {
+                    const position = this.map(response);
+                    successCallback(position);
+                }
+                else {
+                    const error = this.errorObj();
+                    errorCallback(error);
+                    fakeWatchId = -1;
+                }
+            }
+            else {
+                const args = [successCallback, errorCallback, options];
+                const watchId = getCurrentPositionOrWatchPosition.apply(navigator.geolocation, args);
+                if (type === 'WATCH') {
+                    this.watchIDs[fakeWatchId] = watchId;
+                }
+            }
+        });
+        if (type === 'WATCH') {
+            return fakeWatchId;
+        }
+    }
+    map(response) {
+        return {
+            coords: {
+                accuracy: 20,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                latitude: response.latitude,
+                longitude: response.longitude,
+                speed: null,
+            },
+            timestamp: Date.now(),
+        };
+    }
+    errorObj() {
+        return {
+            code: 1,
+            message: 'User denied Geolocation',
+        };
+    }
+    getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')
+  </script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="hmac-token-name" content="Ajax-Token">
+
+  
+  <title>Гранты</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="icon" href="https://fadm.gov.ru/rosmolodezh_base-14.svg">
+  
+<meta name="robots" content="index, follow">
+<meta name="keywords" content="1С-Битрикс, CMS, PHP, bitrix, система управления контентом">
+<meta name="description" content="1С-Битрикс: Управление сайтом">
+<script charset="utf-8" src="./Гранты_files/5f7ddb759c657eaceac06860.js.Без названия"></script>
+<script type="text/javascript" data-skip-moving="true">(function(w, d, n) {var cl = "bx-core";var ht = d.documentElement;var htc = ht ? ht.className : undefined;if (htc === undefined || htc.indexOf(cl) !== -1){return;}var ua = n.userAgent;if (/(iPad;)|(iPhone;)/i.test(ua)){cl += " bx-ios";}else if (/Windows/i.test(ua)){cl += ' bx-win';}else if (/Macintosh/i.test(ua)){cl += " bx-mac";}else if (/Linux/i.test(ua) && !/Android/i.test(ua)){cl += " bx-linux";}else if (/Android/i.test(ua)){cl += " bx-android";}cl += (/(ipad|iphone|android|mobile|touch)/i.test(ua) ? " bx-touch" : " bx-no-touch");cl += w.devicePixelRatio && w.devicePixelRatio >= 2? " bx-retina": " bx-no-retina";var ieVersion = -1;if (/AppleWebKit/.test(ua)){cl += " bx-chrome";}else if ((ieVersion = getIeVersion()) > 0){cl += " bx-ie bx-ie" + ieVersion;if (ieVersion > 7 && ieVersion < 10 && !isDoctype()){cl += " bx-quirks";}}else if (/Opera/.test(ua)){cl += " bx-opera";}else if (/Gecko/.test(ua)){cl += " bx-firefox";}ht.className = htc ? htc + " " + cl : cl;function isDoctype(){if (d.compatMode){return d.compatMode == "CSS1Compat";}return d.documentElement && d.documentElement.clientHeight;}function getIeVersion(){if (/Opera/i.test(ua) || /Webkit/i.test(ua) || /Firefox/i.test(ua) || /Chrome/i.test(ua)){return -1;}var rv = -1;if (!!(w.MSStream) && !(w.ActiveXObject) && ("ActiveXObject" in w)){rv = 11;}else if (!!d.documentMode && d.documentMode >= 10){rv = 10;}else if (!!d.documentMode && d.documentMode >= 9){rv = 9;}else if (d.attachEvent && !/Opera/.test(ua)){rv = 8;}if (rv == -1 || rv == 8){var re;if (n.appName == "Microsoft Internet Explorer"){re = new RegExp("MSIE ([0-9]+[\.0-9]*)");if (re.exec(ua) != null){rv = parseFloat(RegExp.$1);}}else if (n.appName == "Netscape"){rv = 11;re = new RegExp("Trident/.*rv:([0-9]+[\.0-9]*)");if (re.exec(ua) != null){rv = parseFloat(RegExp.$1);}}}return rv;}})(window, document, navigator);</script>
+
+
+<link href="./Гранты_files/grants.css" type="text/css" rel="stylesheet">
+<link href="./Гранты_files/style.css" type="text/css" rel="stylesheet">
+<link href="./Гранты_files/swiper-bundle.min.css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="./Гранты_files/global.css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="./Гранты_files/index.css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="./Гранты_files/bvi.min.css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="./Гранты_files/modal-filter.css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="./Гранты_files/style(1).css" type="text/css" data-template-style="true" rel="stylesheet">
+<link href="style_Bot.css" type="text/css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+  <noscript><div><img src="https://mc.yandex.ru/watch/51103817" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+
+
+<body class="page__body" bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWllZ29tY29uIiwiYWRibG9ja2VyU3RhdHVzIjp7IkRJU1BMQVkiOiJkaXNhYmxlZCIsIkZBQ0VCT09LIjoiZGlzYWJsZWQiLCJUV0lUVEVSIjoiZGlzYWJsZWQiLCJSRURESVQiOiJkaXNhYmxlZCJ9LCJ2ZXJzaW9uIjoiMS45LjA0Iiwic2NvcmUiOjEwOTA0fV0="><noscript><img src="/ef2a2a7c260730bb0ea95c1bb841391d.gif" width="0" height="0" alt="" /></noscript>
+
+  <div id="panel" bis_skin_checked="1"></div>
+  <div class="site-container" bis_skin_checked="1">
+    <header class="header">
+      <div class="container" bis_skin_checked="1">
+
+        <div class="header__wrapper" bis_skin_checked="1">
+          <a href="https://fadm.gov.ru/" class="logo logo-main header__logo">
+            <svg class="">
+              <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#logo"></use>
+            </svg>
+          </a>
+
+          <nav class="nav nav-main">
+            <div class="nav__burger" bis_skin_checked="1">
+              <button class="burger" aria-label="Открыть меню" aria-expanded="false">
+                <span class="burger__line"></span>
+              </button>
+            </div>
+            <div class="header-mobile" bis_skin_checked="1">
+              <div class="header-mobile-menu-inner" bis_skin_checked="1">
+                              
+
+        <div class="header-mobile-item" bis_skin_checked="1">
+        <div class="header-mobile-headline" bis_skin_checked="1">
+                      <p class="header-mobile-title">Агентство</p>
+            <svg class="icon сhevron-up">
+              <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#сhevron-up"></use>
+            </svg>
+                  </div>
+              <ul class="header-mobile-list">
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/about/">Об агентстве</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/structure/">Структура</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/public_council/">Общественный совет</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/anticorruption/">Противодействие коррупции</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/%D1%81ountering-terrorism/">Противодействие терроризму</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/gosudarstvennaya-grazhdanskaya-sluzhba/">Государственная гражданская служба</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/open_agency/">Открытое агентство</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/agency/regionalnye-oiv/">Региональные ОИВ</a>
+              </li>
+                    </ul>
+            </div>
+        <div class="header-mobile-item" bis_skin_checked="1">
+        <div class="header-mobile-headline" bis_skin_checked="1">
+                      <p class="header-mobile-title">Деятельность</p>
+            <svg class="icon сhevron-up">
+              <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#сhevron-up"></use>
+            </svg>
+                  </div>
+              <ul class="header-mobile-list">
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/directions/themed-tracks/">Тематические треки</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/directions/rosmolodezh-developments/">Росмолодёжь.События</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/directions/grant/">Росмолодёжь.Гранты</a>
+              </li>
+                    </ul>
+            </div>
+        <div class="header-mobile-item" bis_skin_checked="1">
+        <div class="header-mobile-headline" bis_skin_checked="1">
+                      <p class="header-mobile-title">Пресс-служба</p>
+            <svg class="icon сhevron-up">
+              <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#сhevron-up"></use>
+            </svg>
+                  </div>
+              <ul class="header-mobile-list">
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/news/">Новости</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/presscenter/presskit/">Пресс-кит</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/presscenter/contacts/">Контакты</a>
+              </li>
+                    </ul>
+            </div>
+        <div class="header-mobile-item" bis_skin_checked="1">
+        <div class="header-mobile-headline" bis_skin_checked="1">
+                        <a class="header-mobile-title" href="https://fadm.gov.ru/documents/">Документы</a>
+                  </div>
+            </div>
+        <div class="header-mobile-item" bis_skin_checked="1">
+        <div class="header-mobile-headline" bis_skin_checked="1">
+                      <p class="header-mobile-title">Обратная связь</p>
+            <svg class="icon сhevron-up">
+              <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#сhevron-up"></use>
+            </svg>
+                  </div>
+              <ul class="header-mobile-list">
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/feedback/contact-agency/">Обратиться в агентство</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/feedback/questions-and-answers/">Вопросы и ответы</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/feedback/requisites/">Реквизиты</a>
+              </li>
+                          <li class="header-mobile-point">
+                <a href="https://fadm.gov.ru/contacts/">Контакты</a>
+              </li>
+                    </ul>
+            </div>
+                </div>
+            </div>
+            <ul class="nav__list list-reset">
+              
+
+      <li class="nav__item menu-hover">
+              <a class="nav__link" href="https://fadm.gov.ru/agency/">              Агентство      </a>
+              <div class="nav__submenu" bis_skin_checked="1">
+          <ul class="drop-down list-reset">
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/about/" class="drop-down__link">
+                  Об агентстве                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/structure/" class="drop-down__link">
+                  Структура                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/public_council/" class="drop-down__link">
+                  Общественный совет                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/anticorruption/" class="drop-down__link">
+                  Противодействие коррупции                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/%D1%81ountering-terrorism/" class="drop-down__link">
+                  Противодействие терроризму                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/gosudarstvennaya-grazhdanskaya-sluzhba/" class="drop-down__link">
+                  Государственная гражданская служба                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/open_agency/" class="drop-down__link">
+                  Открытое агентство                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/agency/regionalnye-oiv/" class="drop-down__link">
+                  Региональные ОИВ                </a>
+              </li>
+                      </ul>
+        </div>
+          </li>
+      <li class="nav__item ">
+               <a class="nav__link" href="javascript:void(0);">              Деятельность      </a>
+              <div class="nav__submenu" bis_skin_checked="1">
+          <ul class="drop-down list-reset">
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/directions/themed-tracks/" class="drop-down__link">
+                  Тематические треки                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/directions/rosmolodezh-developments/" class="drop-down__link">
+                  Росмолодёжь.События                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/directions/grant/" class="drop-down__link">
+                  Росмолодёжь.Гранты                </a>
+              </li>
+                      </ul>
+        </div>
+          </li>
+      <li class="nav__item ">
+               <a class="nav__link" href="javascript:void(0);">              Пресс-служба      </a>
+              <div class="nav__submenu" bis_skin_checked="1">
+          <ul class="drop-down list-reset">
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/news/" class="drop-down__link">
+                  Новости                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/presscenter/presskit/" class="drop-down__link">
+                  Пресс-кит                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/presscenter/contacts/" class="drop-down__link">
+                  Контакты                </a>
+              </li>
+                      </ul>
+        </div>
+          </li>
+      <li class="nav__item menu-hover">
+              <a class="nav__link" href="https://fadm.gov.ru/documents/">              Документы      </a>
+          </li>
+      <li class="nav__item ">
+               <a class="nav__link" href="javascript:void(0);">              Обратная связь      </a>
+              <div class="nav__submenu" bis_skin_checked="1">
+          <ul class="drop-down list-reset">
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/feedback/contact-agency/" class="drop-down__link">
+                  Обратиться в агентство                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/feedback/questions-and-answers/" class="drop-down__link">
+                  Вопросы и ответы                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/feedback/requisites/" class="drop-down__link">
+                  Реквизиты                </a>
+              </li>
+                          <li class="drop-down__item">
+                <a href="https://fadm.gov.ru/contacts/" class="drop-down__link">
+                  Контакты                </a>
+              </li>
+                      </ul>
+        </div>
+          </li>
+              </ul>
+          </nav>
+
+          <ul class="settings list-reset">
+                        <li class="settings__item">
+              <a href="https://fadm.gov.ru/directions/grant/?user_lang=en" class="eng-ver">
+                <svg class="icon main  icon-eng-v">
+                  <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#lang-en"></use>
+                </svg>
+              </a>
+            </li>
+
+            <li class="settings__item">
+              <a href="javascript:void(0);" class="bvi-open">
+                <svg class="icon main  icon-read">
+                  <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#read"></use>
+                </svg>
+              </a>
+            </li>
+
+            <li class="settings__item">
+              <a href="javascript:void(0);" class="js-search">
+                <svg class="icon main  icon-search">
+                  <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#search"></use>
+                </svg>
+              </a>
+            </li>
+
+             <li class="settings__item js-filter-settings">
+              <a href="javascript:void(0);" class="">
+                <svg class="icon main icon-settings">
+                  <use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#settings"></use>
+                </svg>
+              </a>
+            </li>
+
+                      </ul>
+
+        </div>
+
+        	<div id="title-search" class="clio_title-search" bis_skin_checked="1">
+		<form action="https://fadm.gov.ru/search/index.php">
+			<input id="title-search-input" type="text" name="q" value="" size="40" maxlength="50" autocomplete="off" placeholder="Поиск">
+			<input name="s" type="submit" class="btn btn-reset btn--primary" value="Поиск">
+		</form>
+	</div>
+      </div>
+    </header>
+    <div class="right-menu-wrap js-block-modal" bis_skin_checked="1">
+	<div class="right-menu" bis_skin_checked="1">
+		<p class="right-menu__title">Фильтры</p>
+		<div class="right-menu__mob-title" bis_skin_checked="1">
+			Фильтры
+			<div class="right-menu__close js-close" bis_skin_checked="1">
+				<svg class="icon close" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L17 17" stroke="black"></path><path d="M17 1L1 17" stroke="black"></path>
+			</svg></div>
+		</div>
+		<div class="right-menu__inner" bis_skin_checked="1">
+			<div class="right-menu__block-wrap show js-track" bis_skin_checked="1">
+				<div class="right-menu__block" bis_skin_checked="1">
+					<div class="right-menu__subtitle" bis_skin_checked="1">По регионам</div>
+					<a href="https://fadm.gov.ru/directions/grant/">Вся Россия</a>
+					<button class="right-menu__active-region js-btn-region">
+						<svg class="icon-geo" width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<g clip-path="url(#clip0_2449_12897)">
+								<path fill-rule="evenodd" clip-rule="evenodd" d="M7.99976 10.5002C8.33593 10.5008 8.6676 10.4229 8.96843 10.2729L10.1351 9.68957C10.4962 9.51073 10.7999 9.23419 11.0117 8.89137C11.2234 8.54854 11.3348 8.15319 11.3331 7.75024V6.58357C11.3344 6.18063 11.2226 5.78542 11.0105 5.44283C10.7983 5.10025 10.4944 4.82403 10.1331 4.64557L8.96643 4.06224C8.66544 3.91261 8.33389 3.83474 7.99776 3.83474C7.66163 3.83474 7.33008 3.91261 7.02909 4.06224L5.86643 4.64557C5.50516 4.82403 5.20119 5.10025 4.98907 5.44283C4.77694 5.78542 4.66516 6.18063 4.66643 6.58357V7.75024C4.66516 8.15318 4.77694 8.54839 4.98907 8.89098C5.20119 9.23356 5.50516 9.50978 5.86643 9.68824L7.03309 10.2716C7.33321 10.4218 7.66416 10.5001 7.99976 10.5002ZM6.66643 7.75024V6.61824L7.55109 7.06024C7.69033 7.13014 7.84397 7.16654 7.99976 7.16654C8.15556 7.16654 8.3092 7.13014 8.44843 7.06024L9.33309 6.61891V7.75224C9.33325 7.78332 9.32464 7.81382 9.30825 7.84024C9.29186 7.86665 9.26835 7.88791 9.24043 7.90157L8.07376 8.4849C8.05079 8.4964 8.02545 8.50239 7.99976 8.50239C7.97407 8.50239 7.94873 8.4964 7.92576 8.4849L6.75909 7.90157C6.73086 7.88776 6.70715 7.86619 6.69074 7.83939C6.67433 7.81259 6.66589 7.78166 6.66643 7.75024ZM9.83976 14.5002C10.0563 14.3689 10.2575 14.214 10.4398 14.0382L12.7144 11.9256C13.963 10.6666 14.6635 8.96532 14.6635 7.19224C14.6635 5.41915 13.963 3.71788 12.7144 2.4589C12.0965 1.83711 11.3617 1.34365 10.5524 1.00691C9.74301 0.67018 8.87504 0.496826 7.99843 0.496826C7.12181 0.496826 6.25385 0.67018 5.44449 1.00691C4.63513 1.34365 3.90035 1.83711 3.28243 2.4589C2.03114 3.72395 1.33181 5.43309 1.33744 7.21243C1.34306 8.99177 2.05317 10.6965 3.31243 11.9536L5.53776 14.0202C5.72829 14.2037 5.93923 14.3648 6.16643 14.5002L7.99976 16.5002L9.83976 14.5002ZM4.70176 10.5149C3.8261 9.63168 3.3348 8.4383 3.3348 7.19457C3.3348 5.95084 3.8261 4.75746 4.70176 3.87424C5.1336 3.43889 5.64735 3.09336 6.2134 2.85755C6.77944 2.62175 7.38657 2.50034 7.99976 2.50034C8.61296 2.50034 9.22008 2.62175 9.78613 2.85755C10.3522 3.09336 10.8659 3.43889 11.2978 3.87424C12.1705 4.75156 12.6628 5.9372 12.6682 7.17469C12.6736 8.41219 12.1916 9.60205 11.3264 10.4869L9.05976 12.5916C8.77081 12.8681 8.38527 13.0207 7.98536 13.017C7.58545 13.0132 7.20283 12.8534 6.91909 12.5716L4.70176 10.5149Z" fill="white"></path>
+							</g>
+							<defs>
+								<clippath id="clip0_2449_12897"><rect width="16" height="16" fill="white" transform="translate(0 0.5)"></rect></clippath>
+							</defs>
+						</svg>
+						Выбрать регион					</button>
+				</div>
+				<div class="right-menu__block" bis_skin_checked="1">
+					<div class="right-menu__subtitle " bis_skin_checked="1">По трекам</div>
+					<a class="right-menu__active-region _track" href="https://fadm.gov.ru/directions/grant/">Все треки</a>
+					<ul class="right-menu__list">
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28889" class="right-menu__link">
+									Росмолодёжь.Добро								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28888" class="right-menu__link">
+									Роспатриот								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28887" class="right-menu__link">
+									Росмолодёжь.Карьера								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28886" class="right-menu__link">
+									Росмолодёжь.Бизнес								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28885" class="right-menu__link">
+									Общественные организации								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28884" class="right-menu__link">
+									Кадры в сфере ГМП								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28883" class="right-menu__link">
+									Молодые семьи								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28882" class="right-menu__link">
+									Росмолодёжь.+World								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28881" class="right-menu__link">
+									Грантовая поддержка								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28880" class="right-menu__link">
+									Оставайся дома								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28879" class="right-menu__link">
+									Росмолодёжь.Технологии								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28878" class="right-menu__link">
+									Росмолодёжь.Креатив 								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28877" class="right-menu__link">
+									Росмолодёжь.Импакт								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28876" class="right-menu__link">
+									Здоровый образ жизни								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28875" class="right-menu__link">
+									Диалог на равных								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28874" class="right-menu__link">
+									Росмолодёжь.Карьера								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28873" class="right-menu__link">
+									Росмолодёжь.+World								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28872" class="right-menu__link">
+									Медиа								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28871" class="right-menu__link">
+									Статистика								</a>
+							</li>
+													<li class="right-menu__item">
+								<a href="https://fadm.gov.ru/directions/grant/?trends=28870" class="right-menu__link">
+									RE:ОРГАНИЗАЦИЯ								</a>
+							</li>
+											</ul>
+				</div>
+			</div>
+			<div class="right-menu__choose-region js-region" bis_skin_checked="1">
+				<div class="right-menu__region-head" bis_skin_checked="1">
+					<a href="javascript:void(0);" class="right-menu__come-back js-btn-track">
+						<svg width="20" height="21" viewBox="0 0 20 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M2 10.5L20 10.5M2 10.5L10.5 1.5M2 10.5L10.5 19.5" stroke="#8C64D8" stroke-width="2"></path>
+						</svg>
+					</a>
+					<p class="right-menu__subtitle">Выберите регион</p>
+				</div>
+				<div class="committees__search" bis_skin_checked="1">
+					<button class="btn-reset">
+						<svg class="">
+							<use href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#search"></use>
+						</svg>
+					</button>
+					<input type="text" class="input-reset committees__search-input" placeholder="Введите название населенного пункта">
+				</div>
+												
+				<div class="committees-list" bis_skin_checked="1">
+								
+													<div class="committees-list__column" bis_skin_checked="1">
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>А</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=1">
+											Адыгея										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=4">
+											Алтай										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=22">
+											Алтайский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=28">
+											Амурская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=29">
+											Архангельская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=30">
+											Астраханская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Б</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=2">
+											Башкортостан										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=31">
+											Белгородская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=32">
+											Брянская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=3">
+											Бурятия										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>В</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=33">
+											Владимирская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=34">
+											Волгоградская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=35">
+											Вологодская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=36">
+											Воронежская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Д</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=5">
+											Дагестан										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Е</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=79">
+											Еврейская АО										</a>
+									</li>
+															</ul>
+						</div>
+
+													</div>
+																											
+													<div class="committees-list__column" bis_skin_checked="1">
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>З</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=75">
+											Забайкальский край										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>И</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=37">
+											Ивановская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=6">
+											Ингушетия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=38">
+											Иркутская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>К</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=7">
+											Кабардино-Балкария										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=39">
+											Калининградская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=8">
+											Калмыкия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=40">
+											Калужская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=41">
+											Камчатский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=9">
+											Карачаево-Черкесия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=10">
+											Карелия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=42">
+											Кемеровская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=43">
+											Кировская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=11">
+											Коми										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=44">
+											Костромская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=23">
+											Краснодарский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=24">
+											Красноярский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=91">
+											Крым										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=45">
+											Курганская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=46">
+											Курская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Л</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=47">
+											Ленинградская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=48">
+											Липецкая обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>М</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=49">
+											Магаданская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=12">
+											Марий Эл										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=13">
+											Мордовия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=77">
+											Москва										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=50">
+											Московская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=51">
+											Мурманская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+													</div>
+																											
+													<div class="committees-list__column" bis_skin_checked="1">
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Н</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=83">
+											Ненецкий АО										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=52">
+											Нижегородская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=53">
+											Новгородская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=54">
+											Новосибирская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>О</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=55">
+											Омская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=56">
+											Оренбургская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=57">
+											Орловская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>П</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=58">
+											Пензенская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=59">
+											Пермский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=25">
+											Приморский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=60">
+											Псковская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Р</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=61">
+											Ростовская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=62">
+											Рязанская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>С</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=63">
+											Самарская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=78">
+											Санкт-Петербург										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=64">
+											Саратовская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=65">
+											Сахалинская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=66">
+											Свердловская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=92">
+											Севастополь										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=15">
+											Северная Осетия-Алания										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=67">
+											Смоленская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=26">
+											Ставропольский край										</a>
+									</li>
+															</ul>
+						</div>
+
+													</div>
+																											
+													<div class="committees-list__column" bis_skin_checked="1">
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Т</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=68">
+											Тамбовская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=16">
+											Татарстан										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=69">
+											Тверская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=70">
+											Томская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=71">
+											Тульская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=17">
+											Тыва										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=72">
+											Тюменская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>У</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=18">
+											Удмуртия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=73">
+											Ульяновская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Х</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=27">
+											Хабаровский край										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=19">
+											Хакасия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=86">
+											ХМАО — Югра										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Ч</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=74">
+											Челябинская обл.										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=20">
+											Чечня										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=21">
+											Чувашия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=87">
+											Чукотский АО										</a>
+									</li>
+															</ul>
+						</div>
+
+																				
+						
+						<div class="committees-list__item" bis_skin_checked="1">
+							<span>Я</span>
+							<ul class="list-reset">
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=14">
+											Якутия										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=89">
+											Ямало-Ненецкий АО										</a>
+									</li>
+																	<li>
+										<a href="https://fadm.gov.ru/directions/grant/?filter_region=76">
+											Ярославская обл.										</a>
+									</li>
+															</ul>
+						</div>
+
+													</div>
+																												</div>
+			</div>
+		</div>
+	</div>
+	<div class="right-menu__close js-close" bis_skin_checked="1">
+		<svg class="icon close" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L17 17" stroke="black"></path><path d="M17 1L1 17" stroke="black"></path></svg>
+	</div>
+</div>
+<div class="overlay" bis_skin_checked="1"></div>
+    <ul class="socials socials-main list-reset">
+      <li class="socials__item">
+        <a href="https://vk.com/rosmolodez" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#vk"></use>
+          </svg>
+        </a>
+      </li>
+      <li class="socials__item">
+        <a href="https://t.me/rosmolodez" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#tg"></use>
+          </svg>
+        </a>
+      </li>
+      <li class="socials__item">
+        <a href="https://dzen.ru/rosmolodez" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#social3"></use>
+          </svg>
+        </a>
+      </li>
+      <li class="socials__item">
+        <a href="https://ok.ru/rosmolodez" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#ok"></use>
+          </svg>
+        </a>
+      </li>
+      <li class="socials__item">
+        <a href="https://rutube.ru/channel/23488224/" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#social5"></use>
+          </svg>
+        </a>
+      </li>
+      <li class="socials__item">
+        <a href="https://vm.tiktok.com/ZSe7XLkKD/" class="socials__link">
+          <svg>
+            <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite-version2.svg#tiktok"></use>
+          </svg>
+        </a>
+      </li>
+    </ul>
+    <main class="main">
+      
+      
+<section class="grants-hero">
+	<div class="container" bis_skin_checked="1">
+		<link href="./Гранты_files/font-awesome.css" type="text/css" rel="stylesheet">
+<ul class="breadcrumbs list-reset" itemscope="" itemtype="http://schema.org/BreadcrumbList">
+			<li class="breadcrumbs__item" id="bx_breadcrumb_0" itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+				<a href="https://fadm.gov.ru/" title="Главная" class="breadcrumbs__link" itemprop="item">
+					Главная
+				</a>
+				<meta itemprop="position" content="1">
+			</li>
+			<li class="breadcrumbs__item">
+				<a class="breadcrumbs__link active">Гранты</a>
+			</li></ul>		<div class="wrapper-margin" bis_skin_checked="1">
+	<div class="border-green border-green--one" bis_skin_checked="1">
+		<div class="border-green border-green--two" bis_skin_checked="1">
+			<div class="border-green border-green--three " bis_skin_checked="1">
+				<div class="grants-banner" bis_skin_checked="1">
+					<div class="grants-banner__left" bis_skin_checked="1">
+						<div class="grants-banner__logo" bis_skin_checked="1">
+ <img src="./Гранты_files/grant-logo.svg" alt="Росмолодёжь.Гранты">
+						</div>
+						<h2 class="grants-banner__title">Получите до 1,5 млн рублей на реализацию своего проекта</h2>
+ <a href="https://grants.myrosmol.ru/auth/login" target="_blank" class="btn btn-reset btn--secondary">Участвовать</a>
+					</div>
+					<div class="grants-banner__right" bis_skin_checked="1">
+ <img src="./Гранты_files/grants-hero.png" alt="">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+ <br>	</div>
+</section>
+
+<div class="grants-mini" bis_skin_checked="1">
+	<div class="container" bis_skin_checked="1">
+		<div class="grants-mini__wrapper" bis_skin_checked="1">
+							<div class="grants-mini__item" bis_skin_checked="1">
+					<span>Всероссийский конкурс молодёжных проектов среди физических лиц</span>
+					<a href="https://fadm.gov.ru/directions/grant/?ELEMENT_ID=1947" class="btn btn-reset btn--secondary">Подробнее</a>
+				</div>
+							<div class="grants-mini__item" bis_skin_checked="1">
+					<span>Всероссийский конкурс молодёжных проектов среди вузов</span>
+					<a href="https://fadm.gov.ru/directions/grant/?ELEMENT_ID=838" class="btn btn-reset btn--secondary">Подробнее</a>
+				</div>
+							<div class="grants-mini__item" bis_skin_checked="1">
+					<span>Конкурс молодёжных проектов Северо-Кавказского федерального округа</span>
+					<a href="https://fadm.gov.ru/directions/grant/?ELEMENT_ID=1945" class="btn btn-reset btn--secondary">Подробнее</a>
+				</div>
+							<div class="grants-mini__item" bis_skin_checked="1">
+					<span>Конкурс НКО по патриотическому воспитанию</span>
+					<a href="https://fadm.gov.ru/directions/grant/?ELEMENT_ID=1948" class="btn btn-reset btn--secondary">Подробнее</a>
+				</div>
+					</div>
+	</div>
+</div><section class="descr">
+	<div class="container" bis_skin_checked="1">
+		<div class="descr__wrapper" bis_skin_checked="1">
+			<div class="descr__left" bis_skin_checked="1">
+				<h2 class="descr__title">
+					Что такое Росмолодёжь.Гранты?				</h2>
+				<span class="descr__text">
+					Это уникальный сервис для молодёжи, который помогает поддержать социальные инициативы и воплотить мечты в реальность				</span>
+			</div>
+			<div class="descr__right" bis_skin_checked="1">
+				<a href="https://grants.myrosmol.ru/" class="btn btn-reset btn--secondary">Участвовать</a>
+			</div>
+		</div>
+	</div>
+</section>
+		<section class="about">
+		<div class="container" bis_skin_checked="1">
+											<div class="about__item " bis_skin_checked="1">
+					<div class="about__item-left" bis_skin_checked="1">
+						<img src="./Гранты_files/about-1.png" alt="">
+					</div>
+					<div class="about__item-right" bis_skin_checked="1">
+						<div class="about__item-wrap" bis_skin_checked="1">
+							<div class="about__item-num" data-num="2,5 млрд" bis_skin_checked="1">
+								2,5 млрд ₽							</div>
+							<span class="about__item-text">грантовый фонд</span>
+						</div>
+						<span class="about__item-descr">
+							Это уникальный сервис для молодёжи, который помогает поддержать социальные инициативы и воплотить мечты в реальность						</span>
+					</div>
+				</div>
+											<div class="about__item about__item--two" bis_skin_checked="1">
+					<div class="about__item-left" bis_skin_checked="1">
+						<img src="./Гранты_files/about-2.png" alt="">
+					</div>
+					<div class="about__item-right" bis_skin_checked="1">
+						<div class="about__item-wrap" bis_skin_checked="1">
+							<div class="about__item-num" data-num="3200" bis_skin_checked="1">
+								3200							</div>
+							<span class="about__item-text">поддержаных молодежных инициатив</span>
+						</div>
+						<span class="about__item-descr">
+							Это уникальный сервис для молодёжи, который помогает поддержать социальные инициативы и воплотить мечты в реальность						</span>
+					</div>
+				</div>
+											<div class="about__item about__item--three" bis_skin_checked="1">
+					<div class="about__item-left" bis_skin_checked="1">
+						<img src="./Гранты_files/about-3.png" alt="">
+					</div>
+					<div class="about__item-right" bis_skin_checked="1">
+						<div class="about__item-wrap" bis_skin_checked="1">
+							<div class="about__item-num" data-num="50 000" bis_skin_checked="1">
+								50 000							</div>
+							<span class="about__item-text">участников ежегодно</span>
+						</div>
+						<span class="about__item-descr">
+							Это уникальный сервис для молодёжи, который помогает поддержать социальные инициативы и воплотить мечты в реальность						</span>
+					</div>
+				</div>
+						<div class="about__wrapper" bis_skin_checked="1">
+				<div class="about__wrapper-item" bis_skin_checked="1">
+					<div class="about__wrapper-num" data-num="85" bis_skin_checked="1">85</div>
+					<span class="about__wrapper-text">Грантовых площадок</span>
+				</div>
+				<div class="about__wrapper-item" bis_skin_checked="1">
+					<div class="about__wrapper-num" data-num="15" bis_skin_checked="1">15</div>
+					<span class="about__wrapper-text">Номинаций</span>
+				</div>
+			</div>
+		</div>
+	</section>
+	<section class="cards">
+		<div class="container" bis_skin_checked="1">
+			<div class="cards__wrapper" bis_skin_checked="1">
+																											</div>
+		</div>
+	</section>
+	<section class="success">
+		<div class="container" bis_skin_checked="1">
+			<div class="section-header success__header" bis_skin_checked="1">
+				<h2 class="title success__title" data-title="Истории успеха">
+					Истории успеха				</h2>
+				<div class="swiper-buttons" bis_skin_checked="1">
+					<button class="btn-reset swiper-button swiper-buttons__prev success__prev" tabindex="0" aria-label="Previous slide" aria-controls="swiper-wrapper-da7e727e832b97d9">
+						<svg>
+							<use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#chevron-right"></use>
+						</svg>
+					</button>
+					<button class="btn-reset swiper-button swiper-buttons__next success__next" tabindex="0" aria-label="Next slide" aria-controls="swiper-wrapper-da7e727e832b97d9">
+						<svg>
+							<use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#chevron-right"></use>
+						</svg>
+					</button>
+				</div>
+			</div>
+			<div class="swiper swiper-success swiper-initialized swiper-horizontal swiper-pointer-events" bis_skin_checked="1">
+				<div class="swiper-wrapper" id="swiper-wrapper-da7e727e832b97d9" aria-live="polite" style="transition-duration: 0ms; transform: translate3d(-1362px, 0px, 0px);" bis_skin_checked="1"><div class="swiper-slide swiper-slide-duplicate" data-swiper-slide-index="17" style="width: 392px; margin-right: 62px;" role="group" aria-label="18 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-7.jpg" alt="Проект «Месяц здоровья»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-mesyats-zdorovya/" class="success__name">Александра Семенова</a>
+								<span class="success__descr">
+									Проект «Месяц здоровья»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-mesyats-zdorovya/" class="success__link">Подробнее</a>
+							</div>
+						</div><div class="swiper-slide swiper-slide-duplicate" data-swiper-slide-index="18" style="width: 392px; margin-right: 62px;" role="group" aria-label="19 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.jpeg" alt="Проект «Премия Пионер»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-premiya-pioner/" class="success__name">Олег Миронов</a>
+								<span class="success__descr">
+									Проект «Премия Пионер»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-premiya-pioner/" class="success__link">Подробнее</a>
+							</div>
+						</div><div class="swiper-slide swiper-slide-duplicate swiper-slide-prev" data-swiper-slide-index="19" style="width: 392px; margin-right: 62px;" role="group" aria-label="20 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.jpg" alt="Проект «Спортивный конкурс «Профит»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-sportivnyy-konkurs-profit/" class="success__name">Максим Костерев</a>
+								<span class="success__descr">
+									Проект «Спортивный конкурс «Профит»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-sportivnyy-konkurs-profit/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide swiper-slide-active" data-swiper-slide-index="0" style="width: 392px; margin-right: 62px;" role="group" aria-label="1 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.png.jpeg" alt="«Бегущий в &quot;Лабиринте&quot;»">
+								</div>
+								<a href="https://fadm.gov.ru/history/begushchiy-v-labirinte-/" class="success__name">Юлия Баркова</a>
+								<span class="success__descr">
+									«Бегущий в "Лабиринте"»								</span>
+								<a href="https://fadm.gov.ru/history/begushchiy-v-labirinte-/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide swiper-slide-next" data-swiper-slide-index="1" style="width: 392px; margin-right: 62px;" role="group" aria-label="2 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(1).jpg" alt="Проект «Чир-лайн»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-chir-layn/" class="success__name">Константин Пережогин</a>
+								<span class="success__descr">
+									Проект «Чир-лайн»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-chir-layn/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="2" style="width: 392px; margin-right: 62px;" role="group" aria-label="3 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-1.png.jpeg" alt="Проект «Героям-строителям безмолвных рубежей посвящается»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-geroyam-stroitelyam-bezmolvnykh-rubezhey-posvyashchaetsya/" class="success__name">Инна Ильина</a>
+								<span class="success__descr">
+									Проект «Героям-строителям безмолвных рубежей посвящается»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-geroyam-stroitelyam-bezmolvnykh-rubezhey-posvyashchaetsya/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="3" style="width: 392px; margin-right: 62px;" role="group" aria-label="4 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(2).jpg" alt="Проект «ДоброSTART»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-dobrostart/" class="success__name">Миша Мовсисян</a>
+								<span class="success__descr">
+									Проект «Акселератор добровольческих сообществ “ДоброSTART”»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-dobrostart/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="4" style="width: 392px; margin-right: 62px;" role="group" aria-label="5 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-1.jpg" alt="Проект «Фестиваль по спортивному чирлидингу»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-festival-po-sportivnomu-chirlidingu/" class="success__name">Александр Шмонин</a>
+								<span class="success__descr">
+									Проект «Фестиваль по спортивному чирлидингу»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-festival-po-sportivnomu-chirlidingu/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="5" style="width: 392px; margin-right: 62px;" role="group" aria-label="6 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.png" alt="Проект «Ты — лидер»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-ty-lider/" class="success__name">Студенты КГПУ им. В.П. Астафьева</a>
+								<span class="success__descr">
+									Проект «Ты — лидер»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-ty-lider/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="6" style="width: 392px; margin-right: 62px;" role="group" aria-label="7 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(3).jpeg" alt="Проект «Спартакиада &quot;Быстрее.Выше.Сильнее&quot;»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-spartakiada-bystree-vyshe-silnee-/" class="success__name">Муса Эскиев</a>
+								<span class="success__descr">
+									Проект «Спартакиада "Быстрее.Выше.Сильнее"»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-spartakiada-bystree-vyshe-silnee-/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="7" style="width: 392px; margin-right: 62px;" role="group" aria-label="8 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-2.jpg" alt="Проект «Дивный велогородок»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-divnyy-velogorodok/" class="success__name">Екатерина Артишевская</a>
+								<span class="success__descr">
+									Проект «Дивный велогородок»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-divnyy-velogorodok/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="8" style="width: 392px; margin-right: 62px;" role="group" aria-label="9 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-1.jpeg" alt="Проект «Выездные информационные, творческие и игровые «стоянки» &quot;КиБитКа&quot;»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-vyezdnye-informatsionnye-tvorcheskie-i-igrovye-stoyanki-kibitka-/" class="success__name">Марина Ячменева</a>
+								<span class="success__descr">
+									Проект «Выездные информационные, творческие и игровые «стоянки» "КиБитКа"»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-vyezdnye-informatsionnye-tvorcheskie-i-igrovye-stoyanki-kibitka-/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="9" style="width: 392px; margin-right: 62px;" role="group" aria-label="10 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-3.jpg" alt="Проект «Арт-резиденция в Сыктывкаре для молодых художников из регионов Северо-Западного федерального округа»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-art-rezidentsiya-v-syktyvkare-dlya-molodykh-khudozhnikov-iz-regionov-severo-zapadnogo-federal/" class="success__name">Елена Зезегова</a>
+								<span class="success__descr">
+									Проект «Арт-резиденция в Сыктывкаре для молодых художников из регионов Северо-Западного федерального округа»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-art-rezidentsiya-v-syktyvkare-dlya-molodykh-khudozhnikov-iz-regionov-severo-zapadnogo-federal/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="10" style="width: 392px; margin-right: 62px;" role="group" aria-label="11 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(4).jpg" alt="Проект «Мой педагог – турист»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-moy-pedagog-turist/" class="success__name">Ольга Гаранина</a>
+								<span class="success__descr">
+									Проект «Мой педагог – турист»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-moy-pedagog-turist/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="11" style="width: 392px; margin-right: 62px;" role="group" aria-label="12 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-1(1).jpg" alt="Проект «Добро Онлайн»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-dobro-onlayn/" class="success__name">Иван Рева</a>
+								<span class="success__descr">
+									Проект «Добро Онлайн»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-dobro-onlayn/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="12" style="width: 392px; margin-right: 62px;" role="group" aria-label="13 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-2(1).jpg" alt="Проект «Предпринимательский техноинкубатор»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-predprinimatelskiy-tekhnoinkubator/" class="success__name">Артур Нурисламов</a>
+								<span class="success__descr">
+									Проект «Предпринимательский техноинкубатор»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-predprinimatelskiy-tekhnoinkubator/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="13" style="width: 392px; margin-right: 62px;" role="group" aria-label="14 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-4.jpg" alt="Проект «Образовательный интенсив по финансовой грамотности»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-obrazovatelnyy-intensiv-po-finansovoy-gramotnosti/" class="success__name">Наталья Гросс</a>
+								<span class="success__descr">
+									Проект «Образовательный интенсив по финансовой грамотности»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-obrazovatelnyy-intensiv-po-finansovoy-gramotnosti/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="14" style="width: 392px; margin-right: 62px;" role="group" aria-label="15 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(5).png" alt="Проект «Этно-блогер экспедиция «Красная книга памятников Республики Алтай»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-etno-bloger-ekspeditsiya-krasnaya-kniga-pamyatnikov-respubliki-altay/" class="success__name">Айсылу Тандыянова</a>
+								<span class="success__descr">
+									Проект «Этно-блогер экспедиция «Красная книга памятников Республики Алтай»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-etno-bloger-ekspeditsiya-krasnaya-kniga-pamyatnikov-respubliki-altay/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="15" style="width: 392px; margin-right: 62px;" role="group" aria-label="16 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-5.jpg" alt="Просветительский проект «Бал в лучших традициях»">
+								</div>
+								<a href="https://fadm.gov.ru/history/prosvetitelskiy-proekt-bal-v-luchshikh-traditsiyakh/" class="success__name">Алексей Моисеев</a>
+								<span class="success__descr">
+									Просветительский проект «Бал в лучших традициях»								</span>
+								<a href="https://fadm.gov.ru/history/prosvetitelskiy-proekt-bal-v-luchshikh-traditsiyakh/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="16" style="width: 392px; margin-right: 62px;" role="group" aria-label="17 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-6.jpg" alt="«Инклюзивный проект: Лаборатория «Открытый мир»">
+								</div>
+								<a href="https://fadm.gov.ru/history/inklyuzivnyy-proekt-laboratoriya-otkrytyy-mir/" class="success__name">Марина Рудакова</a>
+								<span class="success__descr">
+									«Инклюзивный проект: Лаборатория «Открытый мир»								</span>
+								<a href="https://fadm.gov.ru/history/inklyuzivnyy-proekt-laboratoriya-otkrytyy-mir/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="17" style="width: 392px; margin-right: 62px;" role="group" aria-label="18 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-7.jpg" alt="Проект «Месяц здоровья»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-mesyats-zdorovya/" class="success__name">Александра Семенова</a>
+								<span class="success__descr">
+									Проект «Месяц здоровья»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-mesyats-zdorovya/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide" data-swiper-slide-index="18" style="width: 392px; margin-right: 62px;" role="group" aria-label="19 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.jpeg" alt="Проект «Премия Пионер»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-premiya-pioner/" class="success__name">Олег Миронов</a>
+								<span class="success__descr">
+									Проект «Премия Пионер»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-premiya-pioner/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+											<div class="swiper-slide swiper-slide-duplicate-prev" data-swiper-slide-index="19" style="width: 392px; margin-right: 62px;" role="group" aria-label="20 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.jpg" alt="Проект «Спортивный конкурс «Профит»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-sportivnyy-konkurs-profit/" class="success__name">Максим Костерев</a>
+								<span class="success__descr">
+									Проект «Спортивный конкурс «Профит»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-sportivnyy-konkurs-profit/" class="success__link">Подробнее</a>
+							</div>
+						</div>
+									<div class="swiper-slide swiper-slide-duplicate swiper-slide-duplicate-active" data-swiper-slide-index="0" style="width: 392px; margin-right: 62px;" role="group" aria-label="1 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x.png.jpeg" alt="«Бегущий в &quot;Лабиринте&quot;»">
+								</div>
+								<a href="https://fadm.gov.ru/history/begushchiy-v-labirinte-/" class="success__name">Юлия Баркова</a>
+								<span class="success__descr">
+									«Бегущий в "Лабиринте"»								</span>
+								<a href="https://fadm.gov.ru/history/begushchiy-v-labirinte-/" class="success__link">Подробнее</a>
+							</div>
+						</div><div class="swiper-slide swiper-slide-duplicate swiper-slide-duplicate-next" data-swiper-slide-index="1" style="width: 392px; margin-right: 62px;" role="group" aria-label="2 / 20" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x(1).jpg" alt="Проект «Чир-лайн»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-chir-layn/" class="success__name">Константин Пережогин</a>
+								<span class="success__descr">
+									Проект «Чир-лайн»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-chir-layn/" class="success__link">Подробнее</a>
+							</div>
+						</div><div class="swiper-slide swiper-slide-duplicate" data-swiper-slide-index="2" role="group" aria-label="3 / 20" style="width: 392px; margin-right: 62px;" bis_skin_checked="1">
+							<div class="success__item" bis_skin_checked="1">
+								<div class="success__img" bis_skin_checked="1">
+									<img src="./Гранты_files/image_200x200_2x-1.png.jpeg" alt="Проект «Героям-строителям безмолвных рубежей посвящается»">
+								</div>
+								<a href="https://fadm.gov.ru/history/proekt-geroyam-stroitelyam-bezmolvnykh-rubezhey-posvyashchaetsya/" class="success__name">Инна Ильина</a>
+								<span class="success__descr">
+									Проект «Героям-строителям безмолвных рубежей посвящается»								</span>
+								<a href="https://fadm.gov.ru/history/proekt-geroyam-stroitelyam-bezmolvnykh-rubezhey-posvyashchaetsya/" class="success__link">Подробнее</a>
+							</div>
+						</div></div>
+			<span class="swiper-notification" aria-live="assertive" aria-atomic="true"></span></div>
+			<div class="success__wrapper" bis_skin_checked="1"></div>
+									<a href="javascript:void(0)" data-url="/ajax_page/more_history.php?PAGEN_1=2" id="paginate1" class="btn btn-reset btn--primary 1" onclick="goPage(this);">Больше историй</a>
+			</div>
+	</section>
+<section class="academy">
+	<div class="container" bis_skin_checked="1">
+		<div class="border-purple border-purple--one" bis_skin_checked="1">
+			<div class="border-purple border-purple--two" bis_skin_checked="1">
+				<div class="border-purple border-purple--three " bis_skin_checked="1">
+					<div class="academy-purple" bis_skin_checked="1">
+						<div class="academy-purple__left" bis_skin_checked="1">
+							<h2 class="title academy-purple__title" data-title="Академия Росмолодёжь.Гранты">
+Академия Росмолодёжь.Гранты
+</h2>							<span class="academy-purple__descr">Учим запускать и масштабировать социальные проекты в России. Помогаем подготовиться к грантовому конкурсу и повышаем твои шансы на победу.</span> <a href="https://academy.myrosmol.ru/" target="_blank" class="btn btn-reset btn--secondary">Подробнее</a>						</div>
+						<div class="academy-purple__right" bis_skin_checked="1">
+							<img src="./Гранты_files/academy.png" alt="">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<div class="white-banner" bis_skin_checked="1">
+	<div class="container" bis_skin_checked="1">
+		<div class="white-banner__wrap" bis_skin_checked="1">
+			<div class="white-banner__left" bis_skin_checked="1">
+				<h2 class="title white-banner__caption">Мечтайте и верьте в свою идею, а мы поможем превратить её в реальность</h2>
+<p class="background-text">
+    Мечтайте и верьте в свою идею, а мы превратим её в реальность
+</p>
+<a href="https://fadm.gov.ru/directions/grant/#" class="btn btn-reset btn--primary">Задать вопрос</a>			</div>
+		</div>
+	</div>
+</div>
+<div class="grants-social" bis_skin_checked="1">
+	<div class="container" bis_skin_checked="1">
+		<div class="grants-social__wrap" bis_skin_checked="1">
+			<a href="https://t.me/rosmolodezgrants" target="_blank" class="grants-social__item">
+<div class="grants-social__icon" bis_skin_checked="1">
+ <img src="./Гранты_files/tg.svg" alt="Телеграмм">
+</div>
+<div class="grants-social__text" bis_skin_checked="1">
+ <span class="grants-social__name">Росмолодёжь. Гранты</span> <span class="grants-social__subname">в Telegram</span>
+</div>
+ </a> <a href="https://vk.com/rosmolodez.grants" target="_blank" class="grants-social__item">
+<div class="grants-social__icon grants-social__icon--vk" bis_skin_checked="1">
+ <img src="./Гранты_files/vk.svg" alt="ВКотакте">
+</div>
+<div class="grants-social__text" bis_skin_checked="1">
+ <span class="grants-social__name">Росмолодёжь. Гранты</span> <span class="grants-social__subname">Вконтакте</span>
+</div>
+ </a>		</div>
+	</div>
+</div></main>
+<footer class="footer">
+  <div class="container" bis_skin_checked="1">
+    <div class="footer__top" bis_skin_checked="1">
+      <div class="footer__top-item" bis_skin_checked="1">
+        <a href="https://fadm.gov.ru/" class="logo footer__logo">
+          <img src="./Гранты_files/logo-footer.svg" alt="">
+        </a>
+        <ul class="socials list-reset footer__socials">
+          <li class="socials__item">
+            <a href="https://vk.com/rosmolodez" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#vk"></use>
+              </svg>
+            </a>
+          </li>
+          <li class="socials__item">
+            <a href="https://t.me/rosmolodez" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#tg"></use>
+              </svg>
+            </a>
+          </li>
+          <li class="socials__item">
+            <a href="https://dzen.ru/rosmolodez" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#social3"></use>
+              </svg>
+            </a>
+          </li>
+          <li class="socials__item">
+            <a href="https://ok.ru/rosmolodez" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#ok"></use>
+              </svg>
+            </a>
+          </li>
+          <li class="socials__item">
+            <a href="https://rutube.ru/channel/23488224/" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#social5"></use>
+              </svg>
+            </a>
+          </li>
+          <li class="socials__item">
+            <a href="https://www.tiktok.com/" target="blank" class="socials__link">
+              <svg>
+                <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#tiktok"></use>
+              </svg>
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+	<div class="footer__top-item" bis_skin_checked="1">
+		<ul class="footer__nav footer__nav--tablet list-reset">
+											<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/agency/">Агентство</a>
+				</li>
+											<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/directions/themed-tracks/">Деятельность</a>
+				</li>
+											<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/presscenter/contacts/">Пресс-служба</a>
+				</li>
+									
+		</ul>
+		<ul class="footer__nav list-reset">
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/agency/">Агентство</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/directions/themed-tracks/">Деятельность</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/presscenter/contacts/">Пресс-служба</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/documents/">Документы</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/news/">Новости</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/feedback/contact-agency/">Обратная связь</a>
+				</li>
+					</ul>
+	</div>
+
+	<div class="footer__top-item" bis_skin_checked="1">
+		<ul class="footer__nav list-reset">
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/feedback/contact-agency/">Обратиться в агентство </a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/agency/open_agency/">Открытое агентство</a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/agency/anticorruption/">Противодействие коррупции </a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/agency/%D1%81ountering-terrorism/">Противодействие терроризму </a>
+				</li>
+							<li class="footer__nav-item">
+					<a href="https://fadm.gov.ru/public-service/gosudarstvennaya-usluga/">Государственная услуга</a>
+				</li>
+					</ul>
+	</div>
+      <div class="footer__top-item" bis_skin_checked="1">
+        <div class="footer__info" bis_skin_checked="1">
+          <div class="footer__address" bis_skin_checked="1">
+            <span class="footer__address-top">Адрес</span>
+            <span class="footer__address-bottom">109028, Москва, Большой Трехсвятительский переулок, д. 2/1, стр. 2.</span>
+          </div>
+          <div class="footer__time" bis_skin_checked="1">
+            <div class="footer__time-wrap" bis_skin_checked="1">
+              <span class="footer__time-top">Понедельник — Четверг</span>
+              <span class="footer__time-bottom">9:00-18:00</span>
+            </div>
+            <div class="footer__time-wrap" bis_skin_checked="1">
+              <span class="footer__time-top">Пятница</span>
+              <span class="footer__time-bottom">9:00-16:45</span>
+            </div>
+          </div>
+          <div class="footer__mail" bis_skin_checked="1">
+            <span class="footer__mail-top">Электронная почта</span>
+            <a href="mailto:Op@fadm.gov.ru">Op@fadm.gov.ru</a>
+          </div>
+          <div class="footer__tablet" bis_skin_checked="1">
+            <ul class="socials list-reset footer__socials">
+              <li class="socials__item">
+                <a href="https://vk.com/rosmolodez" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#vk"></use>
+                  </svg>
+                </a>
+              </li>
+              <li class="socials__item">
+                <a href="https://t.me/rosmolodez" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#tg"></use>
+                  </svg>
+                </a>
+              </li>
+              <li class="socials__item">
+                <a href="https://dzen.ru/rosmolodez" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#social3"></use>
+                  </svg>
+                </a>
+              </li>
+              <li class="socials__item">
+                <a href="https://ok.ru/rosmolodez" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#ok"></use>
+                  </svg>
+                </a>
+              </li>
+              <li class="socials__item">
+                <a href="https://rutube.ru/channel/23488224/" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#social5"></use>
+                  </svg>
+                </a>
+              </li>
+              <li class="socials__item">
+                <a href="https://www.tiktok.com/" target="blank" class="socials__link">
+                  <svg>
+                    <use xlink:href="/local/templates/fadmgovru/assets/svg/sprite.svg#tiktok"></use>
+                  </svg>
+                </a>
+              </li>
+            </ul>
+          </div>
+          <a href="tel:74956688008" class="footer__phone">+7&nbsp;495&nbsp;668-80-08</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom" bis_skin_checked="1">
+      <a href="https://fadm.gov.ru/directions/grant/#" class="footer__copyright">© 2008-2023 Федеральное агентство по делам молодежи (Росмолодёжь)</a>
+      <ul class="footer__bottom-nav list-reset">
+        <li>
+          <a href="https://fadm.gov.ru/karta_saita/">Карта сайта</a>
+        </li>
+        <li>
+          <a href="https://fadm.gov.ru/contacts/">Все контакты</a>
+        </li>
+        <li>
+          <a href="https://fadm.gov.ru/technical-information/">Технические сведения</a>
+        </li>
+        <li>
+          <a href="https://fadm.gov.ru/legal-information/">Правовая информация</a>
+        </li>
+        <li>
+          <a href="https://metrika.yandex.ru/stat/?id=51103817&amp;from=informer" target="_blank" rel="nofollow">
+            <img src="./Гранты_files/3_1_FFFFFFFF_EFEFEFFF_0_pageviews" style="width:88px; height:31px; border:0;" alt="Яндекс.Метрика" title="Яндекс.Метрика: данные за сегодня (просмотры)" onclick="try{Ya.Metrika.informer({i:this,id:4941550,lang:&#39;ru&#39;});return false}catch(e){}">
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script src="popups.js"></script>
+<script src="chat.js"></script>
+<!-- <script src="test_chat.js"></script> -->
+
+<script type="text/javascript">if(!window.BX)window.BX={};if(!window.BX.message)window.BX.message=function(mess){if(typeof mess==='object'){for(let i in mess) {BX.message[i]=mess[i];} return true;}};</script>
+<script type="text/javascript">(window.BX||top.BX).message({'JS_CORE_LOADING':'Загрузка...','JS_CORE_NO_DATA':'- Нет данных -','JS_CORE_WINDOW_CLOSE':'Закрыть','JS_CORE_WINDOW_EXPAND':'Развернуть','JS_CORE_WINDOW_NARROW':'Свернуть в окно','JS_CORE_WINDOW_SAVE':'Сохранить','JS_CORE_WINDOW_CANCEL':'Отменить','JS_CORE_WINDOW_CONTINUE':'Продолжить','JS_CORE_H':'ч','JS_CORE_M':'м','JS_CORE_S':'с','JSADM_AI_HIDE_EXTRA':'Скрыть лишние','JSADM_AI_ALL_NOTIF':'Показать все','JSADM_AUTH_REQ':'Требуется авторизация!','JS_CORE_WINDOW_AUTH':'Войти','JS_CORE_IMAGE_FULL':'Полный размер'});</script><script type="text/javascript" src="./Гранты_files/core.js.Без названия"></script><script>BX.setJSList(['/bitrix/js/main/core/core_ajax.js','/bitrix/js/main/core/core_promise.js','/bitrix/js/main/polyfill/promise/js/promise.js','/bitrix/js/main/loadext/loadext.js','/bitrix/js/main/loadext/extension.js','/bitrix/js/main/polyfill/promise/js/promise.js','/bitrix/js/main/polyfill/find/js/find.js','/bitrix/js/main/polyfill/includes/js/includes.js','/bitrix/js/main/polyfill/matches/js/matches.js','/bitrix/js/ui/polyfill/closest/js/closest.js','/bitrix/js/main/polyfill/fill/main.polyfill.fill.js','/bitrix/js/main/polyfill/find/js/find.js','/bitrix/js/main/polyfill/matches/js/matches.js','/bitrix/js/main/polyfill/core/dist/polyfill.bundle.js','/bitrix/js/main/core/core.js','/bitrix/js/main/polyfill/intersectionobserver/js/intersectionobserver.js','/bitrix/js/main/lazyload/dist/lazyload.bundle.js','/bitrix/js/main/polyfill/core/dist/polyfill.bundle.js','/bitrix/js/main/parambag/dist/parambag.bundle.js']);
+BX.setCSSList(['/bitrix/js/main/lazyload/dist/lazyload.bundle.css','/bitrix/js/main/parambag/dist/parambag.bundle.css']);</script>
+<script type="text/javascript">(window.BX||top.BX).message({'LANGUAGE_ID':'ru','FORMAT_DATE':'DD.MM.YYYY','FORMAT_DATETIME':'DD.MM.YYYY HH:MI:SS','COOKIE_PREFIX':'BITRIX_SM','SERVER_TZ_OFFSET':'10800','UTF_MODE':'Y','SITE_ID':'s1','SITE_DIR':'/','USER_ID':'','SERVER_TIME':'1676646759','USER_TZ_OFFSET':'0','USER_TZ_AUTO':'Y','bitrix_sessid':'7ad6307000b4229c57a2bd1e4f4f40cc'});</script><script type="text/javascript" src="./Гранты_files/swiper.min.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/pristine.min.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/bvi.min.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/index.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/main.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/script.js.Без названия"></script>
+<script type="text/javascript" src="./Гранты_files/script.js(1).Без названия"></script>
+<script type="text/javascript">var _ba = _ba || []; _ba.push(["aid", "82f2253c4e6e283974056ebfaaf3cf38"]); _ba.push(["host", "fadm.gov.ru"]); (function() {var ba = document.createElement("script"); ba.type = "text/javascript"; ba.async = true;ba.src = (document.location.protocol == "https:" ? "https://" : "http://") + "bitrix.info/ba.js";var s = document.getElementsByTagName("script")[0];s.parentNode.insertBefore(ba, s);})();</script>
+
+
+<script type="text/javascript"> (function (m,e,t,r,i,k,a) {
+    m[i] = m[i] || function() { (m[i].a = m[i].a || []).push(arguments)};
+    m[i].l = 1*new Date();
+    k=e.createElement(t), a=e.getElementsByTagName(t)[0], k.async=1, k.src=r,
+      a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(51103817, "init", {
+      clickmap:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:true
+    });
+</script>
+<script>
+	BX.ready(function(){
+		new JCTitleSearchCustom({
+			'AJAX_PAGE' : '/directions/grant/',
+			'CONTAINER_ID': 'title-search',
+			'INPUT_ID': 'title-search-input',
+			'MIN_QUERY_LEN': 2
+		});
+	});
+</script>
+
+
+<div class="title-search-result" bis_skin_checked="1"></div></body></html>

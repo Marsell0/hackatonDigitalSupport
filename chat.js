@@ -16,10 +16,12 @@ const chatBody = document.querySelector(".chat__body");
 const URL = 'http://127.0.0.1:8000/send_voice';
 let img = document.createElement('img')
 img.setAttribute('src', 'src/mic.svg')
+img.setAttribute('width', '40px')
 let start = document.createElement('button');
 start.id = 'start';
 start.appendChild(img)
 let img1 = document.createElement('img')
+img1.setAttribute('width', '40px')
 img1.setAttribute('src', 'src/stop.svg')
 let stop = document.createElement('button');
 stop.id = 'stop';
@@ -68,6 +70,7 @@ function showChat(){
     let chat = document.createElement('button');
     let img = document.createElement('img')
     img.setAttribute('src', 'src/bot.svg')
+    img.setAttribute('width', '40px')
     // img.setAttribute('width', '30px')
     // img.setAttribute('height', '30px')
     chat.classList.add('open-button');
